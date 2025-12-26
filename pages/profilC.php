@@ -78,6 +78,12 @@ $stmt = $pdo->prepare("
 $stmt->execute(['id_coach' => $id_coach]);
 $reservation = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$photoPath = !empty($coachObj->getPhoto()) ? 'assets//images/' . $coachObj->getPhoto() : 'assets/images/profile.avif';
+if (!file_exists($photoPath)) {
+    $photoPath = 'assets/images/profile.avif';
+}
+
+
 if (isset($_GET['delete_dispo'])) {
     $id_dispo = (int) $_GET['delete_dispo'];
     $stmt = $pdo->prepare("DELETE FROM disponibilite WHERE id_dispo = :id_dispo AND id_coach = :id_coach");
@@ -147,7 +153,7 @@ if (isset($_GET['delete_dispo'])) {
 
     <div class="flex items-center space-x-6 mb-6">
 
-       <img src="<?= !empty($coachObj->getPhoto()) ? htmlspecialchars($coachObj->getPhoto()) : 'path/to/default-avatar.png' ?>" alt="Photo de profil" 
+       <img src="<?= !empty($coachObj->getPhoto()) ? htmlspecialchars($coachObj->getPhoto()) : 'assets/images/profile.avif' ?>" alt="Photo de profil" 
             class="w-28 h-28 rounded-full object-cover">
     </div>
 
