@@ -12,7 +12,25 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'sportif') {
 
 $pdo = Database::getConnection();
 
+$stmt = $pdo->prepare("
+    SELECT 
+        r.date_r,
+        r.heure,
+        r.statut,
+        u.nom AS coach_nom,
+        c.discipline
+    FROM reservation r
+    JOIN coach c ON r.id_coach = c.id_coach
+    JOIN users u ON c.id_user = u.id_user
+    WHERE r.id_sportif = :id_sportif
+    ORDER BY r.date_r ASC, r.heure ASC
+");
 
+$stmt->execute([
+    'id_sportif' => $_SESSION['id_user']
+]);
+
+$reservation = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
@@ -85,21 +103,38 @@ $pdo = Database::getConnection();
                 <div class="text-3xl font-bold"></div>
                 <div class="text-gray-300">Séances Complétées</div>
             </div>
-
-            <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl">
-                <i class="fas fa-award text-emerald-400 text-4xl mb-4"></i>
-                <div class="text-3xl font-bold"></div>
-                <div class="text-gray-300">Coachs Favoris</div>
-            </div>
        </div>
 
         <div class="grid lg:grid-cols-3 gap-6">
 
             <div class="lg:col-span-2 bg-white/10 backdrop-blur-xl border border-white/20
-                        rounded-2xl p-6 shadow-xl">
+            rounded-2xl p-6 shadow-xl">
                 <h2 class="text-2xl font-bold mb-6">Prochaines Séances</h2>
-                <p class="text-gray-300">Aucune séance programmée pour le moment.</p>
+
+                <?php if (empty($reservation)): ?>
+                    <p class="text-gray-300">Aucune séance programmée pour le moment.</p>
+                <?php else: ?>
+                    <div class="space-y-4">
+                        <?php foreach ($reservations as $r): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($r->getIdSportif()) ?></td>
+                                <td><?= htmlspecialchars($r->getDate()) ?></td>
+                                <td><?= htmlspecialchars($r->getHeure()) ?></td>
+                                <td>
+                                    <?php
+                                    $stat = $r->getStatut();
+                                    if ($stat === 'en_attente') echo '<span class="text-yellow-400">En attente</span>';
+                                    elseif ($stat === 'acceptée') echo '<span class="text-green-400">Acceptée</span>';
+                                    elseif ($stat === 'refusée') echo '<span class="text-red-400">Refusée</span>';
+                                    ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+
+                    </div>
+                <?php endif; ?>
             </div>
+
 
             <div class="space-y-6">
 

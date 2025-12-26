@@ -13,73 +13,30 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'coach') {
     exit;
 }
 
-// --- CRÉER LA CONNEXION PDO ---
-$pdo = Database::getConnection(); // <-- c'est indispensable !!!
+$pdo = Database::getConnection(); 
 
-// Ensuite, tes requêtes préparées fonctionneront :
-$stmt = $pdo->prepare("
-    SELECT u.*, c.id_coach, c.biographie, c.discipline, c.experience, c.certif, c.photo
-    FROM users u
-    JOIN coach c ON u.id_user = c.id_user
-    WHERE u.id_user = :id_user
-");
+$stmt = $pdo->prepare("SELECT id_coach FROM coach WHERE id_user = :id_user");
 $stmt->execute(['id_user' => $_SESSION['id_user']]);
-$data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// Vérifier si le coach existe
-if (!$data) {
-    die("Coach introuvable");
-}
+$id_coach = $stmt->fetchColumn();
 
 
-$coach = new Coach(
-    $data['id_user'],
-    $data['nom'],
-    $data['email'],
-    $data['telephone'],
-    $data['role'],
-    $data['id_coach'],
-    $data['biographie'],
-    $data['discipline'],
-    $data['experience'],
-    $data['certif'],
-    $data['photo']
-);
-
-$id_coach = $coach->getIdCoach();
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $jour = $_POST['jour'] ?? null;
-    $heure_d = $_POST['heure_d'] ?? null;
-    $heure_f = $_POST['heure_f'] ?? null;
-
-    if ($jour && $heure_d && $heure_f) {
-        $dispo = new Disponibilite($id_coach, $jour, $heure_d, $heure_f);
-        $dispo->save($pdo);
-        header("Location: profilC.php"); // refresh page
-        exit;
-    }
-}
-
-// Récupérer toutes les disponibilités
-$disponibilite = Disponibilite::getByCoach($pdo, $id_coach);
-
-// Récupérer toutes les réservations
-$stmt = $pdo->prepare("
-    SELECT r.*, u.nom AS sportif_nom
-    FROM reservation r
-    JOIN users u ON r.id_sportif = u.id_user
-    WHERE r.id_coach = :id_coach
-    ORDER BY r.date_r, r.heure
-");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM reservation WHERE id_coach = :id_coach AND statut = 'en_attente'");
 $stmt->execute(['id_coach' => $id_coach]);
-$reservationData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$attente = $stmt->fetchColumn();
 
-$reservations = [];
-foreach ($reservationData as $r) {
-    $reservations[] = new Réservation($r['id_reservation'], $r['date_r'], $r['heure'], $r['statut']);
-}
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM reservation WHERE id_coach = :id_coach AND date_r = CURDATE()");
+$stmt->execute(['id_coach' => $id_coach]);
+$aujourdhui = $stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM reservation WHERE id_coach = :id_coach AND date_r = CURDATE() + INTERVAL 1 DAY");
+$stmt->execute(['id_coach' => $id_coach]);
+$demain = $stmt->fetchColumn();
+
+
+$stmt = $pdo->prepare("SELECT MIN(date_r) FROM reservation WHERE id_coach = :id_coach AND date_r >= CURDATE()");
+$stmt->execute(['id_coach' => $id_coach]);
+$prochaine = $stmt->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -127,7 +84,6 @@ foreach ($reservationData as $r) {
                 </button>
             </div>
 
-            <!-- Mobile Menu -->
             <div id="mobileMenu" class="hidden md:hidden pb-4 space-y-2">
                 <a href="profilC.php" class="block hover:text-emerald-400">Profile</a>
                 <a href="coach.php" class="block text-emerald-400 font-bold">Dashboard</a>
@@ -142,27 +98,20 @@ foreach ($reservationData as $r) {
         <div class="grid md:grid-cols-4 px-32 gap-6 mb-12">
             <div class="bg-white/10 p-6 rounded-xl">
                 Demandes en attente<br>
-                <span class="text-2xl font-bold"></span>
+                <span class="text-2xl font-bold"><?= $attente ?></span>
             </div>
 
             <div class="bg-white/10 p-6 rounded-xl">
                 Séances aujourd'hui<br>
-                <span class="text-2xl font-bold"></span>
+                <span class="text-2xl font-bold"><?= $demain ?></span>
             </div>
 
             <div class="bg-white/10 p-6 rounded-xl">
-                Séances demain<br>
-                <span class="text-2xl font-bold"></span>
-            </div>
-
-            <div class="bg-white/10 p-6 rounded-xl">
-                Prochaine séance<br>
+                Prochaine séance <br>
+                <span class="text-2xl font-bold"><?= $prochaine ?></span>
             </div>
        </div>
        
-
-       
-
 </div>
 
      <script src="./assets/js/index.js" ></script>

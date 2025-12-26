@@ -73,13 +73,13 @@
                         </p>
 
                   <div class="flex flex-col sm:flex-row gap-4">
-                            <a href="coach.php">
+                            <a href="../pages/register.php">
                                 <button class="bg-white/30 backdrop-blur-md px-8 py-4 rounded-full
                                             hover:bg-white/40 transition text-white font-semibold shadow-lg">
                                     Découvrir les Coachs
                                 </button>
                             </a>
-                            <a href="inscri.php">
+                            <a href="../pages/register.php">
                                 <button class="border border-white/40 px-8 py-4 rounded-full
                                             hover:bg-white/20 transition text-white font-semibold">
                                     Devenir Coach
